@@ -5,6 +5,7 @@ It is Golang retweet bot. It's search for the hashtag #Golangjob and retweets it
 ## Current Features
 1. Searches for the tweets with hashtag #Golangjob and retweet them.
 2. Follow back the Follower.
+3. Compitable to [Go Meta Linter](https://github.com/alecthomas/gometalinter)
 
 ## ToDo
 1. Create a Cron job to auto-execute it.
