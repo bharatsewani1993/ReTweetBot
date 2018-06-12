@@ -14,10 +14,10 @@ import (
 //login to twitter
 func twitterlogin() *anaconda.TwitterApi {
 	//API Key and Access Token
-	  consumerkey := "mkepp9H65kniGdBbYoaH3qmrM"
-	  consumersecret := "5T9WfXw4wqlPIDy8YbDVttS2jIiWGvJ3934iPc15jr1N6JL7NN"
-	  accesstoken := "1005393626967363585-3DhoYPWQMblzFgwTcYSqJ33Vm1JJBi"
-	  accesstokensecret := "cio0aTlMObZlwrNhqaZS8EFyuZ25jdLnVPhWPJ1iX7yaj"
+	  consumerkey := ""
+	  consumersecret := ""
+	  accesstoken := ""
+	  accesstokensecret := ""
 
 	//Authentication With Twitter
 	anaconda.SetConsumerKey(consumerkey)
