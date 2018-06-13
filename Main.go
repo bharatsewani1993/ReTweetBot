@@ -14,10 +14,10 @@ import (
 //login to twitter
 func twitterlogin() *anaconda.TwitterApi {
 	//API Key and Access Token
-	  consumerkey := ""
-	  consumersecret := ""
-	  accesstoken := ""
-	  accesstokensecret := ""
+  consumerkey := "mkepp9H65kniGdBbYoaH3qmrM"
+  consumersecret := "5T9WfXw4wqlPIDy8YbDVttS2jIiWGvJ3934iPc15jr1N6JL7NN"
+  accesstoken := "1005393626967363585-3DhoYPWQMblzFgwTcYSqJ33Vm1JJBi"
+  accesstokensecret := "cio0aTlMObZlwrNhqaZS8EFyuZ25jdLnVPhWPJ1iX7yaj"
 
 	//Authentication With Twitter
 	anaconda.SetConsumerKey(consumerkey)
@@ -64,7 +64,7 @@ func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
 	fmt.Printf("Followers in DB: %v\n", followersindb)
 
 	//compare existing followers with new followers
-	  for i, followerid := range followerlist.Ids {
+	/*  for i, followerid := range followerlist.Ids {
 			 for j, followeriddb := range followersindb {
 				  if followerid == followeriddb {
 						followersindb = append(followersindb[:j], followersindb[j+1:]...)
@@ -73,8 +73,14 @@ func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
 					}
 			 }
 		}
+		*/
 
-		fmt.Printf("Followers from TWitter: %v\n",followerlist.Ids)
+	 //find new followers by comparint with existing.
+	 userlist := difference(followerlist.Ids,followersindb)
+	 fmt.Printf("New Followers: %v\n",userlist)
+
+
+  fmt.Printf("Followers from TWitter: %v\n",followerlist.Ids)
 
 	//loop through follower list
 	options.Del("skip_status")
@@ -82,7 +88,7 @@ func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
 	options.Del("count")
 	options.Set("follow", "false")
 
-		for _, list := range followerlist.Ids {
+		for _, list := range userlist {
 		//fmt.Printf("User Id %v\n",list)
 		//follow back users
 		_, err := api.FollowUserId(list, options)
@@ -92,8 +98,8 @@ func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
 
   }
 	//add users to database
-	if followerlist.Ids != nil{
-		storefollowersid(followerlist.Ids, db)
+	if userlist != nil{
+		storefollowersid(userlist, db)
 	}
 }
 
@@ -158,7 +164,7 @@ func greetusers(api *anaconda.TwitterApi, db *sql.DB){
 				}
 		 }
 		 if followerlist != nil {
-			 //updategreetedusers(followerlist)
+			 updategreetedusers(followerlist,db)
 		 }
 
 }
@@ -178,6 +184,59 @@ func getungreetedusersfromdb(db *sql.DB) ([]int64){
 		 users = append(users,followerid)
 	 }
 	 return users
+}
+
+func difference(twitteruserlist []int64, dbuserlist []int64) ([]int64) {
+	  var diff []int64
+		for _, twitterusers := range twitteruserlist {
+			  found := false
+				for _, dbusers := range dbuserlist {
+					 if twitterusers == dbusers {
+						 	found = true
+							break
+					 }
+				}
+				if !found {
+					diff = append(diff,twitterusers)
+				}
+		}
+		return diff;
+}
+
+func updategreetedusers(followerlist []int64, db *sql.DB) (bool){
+	//creating bulk update query
+	    updatequery := "UPDATE followers SET greet = (CASE followerid when "
+		  for _, followerid := range followerlist {
+				s := strconv.FormatInt(followerid, 10)
+				updatequery += s + " then 1 when"
+			}
+			updatequery = strings.TrimRight(updatequery," when")
+			updatequery += " END ) where followerid in ("
+			for _, followerid := range followerlist {
+				s := strconv.FormatInt(followerid, 10)
+				updatequery += s + ","
+			}
+			updatequery = strings.TrimRight(updatequery, ",")
+			updatequery = updatequery + ")"
+			//fmt.Println("Update Query: %v\n",updatequery)
+
+			stmt, err := db.Prepare(updatequery)
+			if err != nil {
+				fmt.Printf("Error %v\n", err)
+			}
+
+			res, err := stmt.Exec()
+			if err != nil {
+				fmt.Println("Error: %v\n", err)
+			}
+
+			affect, err := res.RowsAffected()
+			if err != nil {
+				fmt.Println("Error: %v\n", err)
+			}
+
+			fmt.Println("Effected Rows: ",affect)
+			return true
 }
 
 func main() {
