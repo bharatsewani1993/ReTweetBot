@@ -7,9 +7,9 @@ It is Golang retweet bot. It's search for the hashtag #Golangjob and retweets it
 2. Follow back the Follower.
 3. Greet the follower.
 4. Greet and follow only new follower.
+5. Do only unique Retweets
 
 ## ToDo
-1. Write code do only unique retweets
-2. Create a Cron job to auto-execute it.
-3. Setup it using Docker.
-4. Test the Code and put it on a production server.
+1. Create a Cron job to auto-execute it.
+2. Setup it using Docker.
+3. Test the Code and put it on a production server.

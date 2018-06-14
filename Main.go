@@ -14,10 +14,10 @@ import (
 //login to twitter
 func twitterlogin() *anaconda.TwitterApi {
 	//API Key and Access Token
-  consumerkey := ""
-  consumersecret := ""
-  accesstoken := ""
-  accesstokensecret := ""
+	consumerkey := ""
+	consumersecret := ""
+	accesstoken := ""
+	accesstokensecret := ""
 
 	//Authentication With Twitter
 	anaconda.SetConsumerKey(consumerkey)
@@ -26,7 +26,7 @@ func twitterlogin() *anaconda.TwitterApi {
 }
 
 //search and retweet
-func searchandretweet(api *anaconda.TwitterApi) {
+func searchandretweet(api *anaconda.TwitterApi, db *sql.DB) {
 	//define search term
 	options := url.Values{}
 	options.Set("count", "150")
@@ -39,13 +39,36 @@ func searchandretweet(api *anaconda.TwitterApi) {
 	if err != nil {
      fmt.Printf("Error: %v\n",err)
 	}
+
+	//tweeter tweets id
+	  var newtweetid []int64
+		for _, tweetid := range SearchResult.Statuses{
+			newtweetid = append(newtweetid,tweetid.Id)
+		}
+
+	//Already done tweets
+	 pasttweets := gettweetsfromdb(db)
+
+	 //find new tweets to do.
+	  tweetstodo := difference(newtweetid,pasttweets)
+
+
 	//loop through search result
 	for _, tweet := range SearchResult.Statuses {
-		fmt.Printf("Tweet %v\n", tweet.Text)
-		//ReTweet
-		// tweetinfo, _ := api.Retweet(tweet.Id,true)
-		//fmt.Printf(tweetinfo.Text)
+		 for _, tweets := range tweetstodo {
+			  if tweets == tweet.Id {
+					//fmt.Printf("Tweet %v\n", tweet.Text)
+					//ReTweet
+					 tweetinfo, _ := api.Retweet(tweet.Id,true)
+					 fmt.Printf(tweetinfo.Text)
+				}
+		 }
 	}
+
+	if tweetstodo != nil {
+		updatetweetlist(tweetstodo,db)
+	}
+
 }
 
 func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
@@ -63,22 +86,9 @@ func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
 	followersindb := getfollowersfromdb(db)
 	fmt.Printf("Followers in DB: %v\n", followersindb)
 
-	//compare existing followers with new followers
-	/*  for i, followerid := range followerlist.Ids {
-			 for j, followeriddb := range followersindb {
-				  if followerid == followeriddb {
-						followersindb = append(followersindb[:j], followersindb[j+1:]...)
-						followerlist.Ids = append(followerlist.Ids[:i], followerlist.Ids[i+1:]...)
-						 break;
-					}
-			 }
-		}
-		*/
-
 	 //find new followers by comparint with existing.
 	 userlist := difference(followerlist.Ids,followersindb)
 	 fmt.Printf("New Followers: %v\n",userlist)
-
 
   fmt.Printf("Followers from TWitter: %v\n",followerlist.Ids)
 
@@ -239,10 +249,47 @@ func updategreetedusers(followerlist []int64, db *sql.DB) (bool){
 			return true
 }
 
+//get past tweets from db
+func gettweetsfromdb(db *sql.DB) ([]int64){
+	var tweetlist []int64
+	rows, err := db.Query("select tweetid from tweets where active = 1")
+	if err != nil{
+		fmt.Printf("Error: %v\n",err)
+	}
+	for rows.Next(){
+		var tweetid int64
+		err := rows.Scan(&tweetid)
+		if err != nil {
+			fmt.Printf("Error %v\n",err)
+		}
+		tweetlist = append(tweetlist,tweetid)
+	}
+	return tweetlist
+}
+
+//update db with tweet list
+func updatetweetlist(tweetlist []int64, db *sql.DB){
+	query := "Insert into tweets (tweetid) values ("
+	for _, tweetid := range tweetlist {
+		 s := strconv.FormatInt(tweetid,10)
+		 query += s + "),("
+	}
+	query = strings.TrimRight(query,",(")
+
+	statment, err := db.Prepare(query);
+	if err != nil{
+		fmt.Printf("Error %v\n",err)
+	}
+	_, err = statment.Exec()
+	if err != nil {
+		fmt.Printf("Error %v\n",err)
+	}
+}
+
 func main() {
 	api := twitterlogin()
 	db := dbconnection()
-	searchandretweet(api)
+	searchandretweet(api,db)
 	followbackusers(api, db)
   greetusers(api,db)
 	fmt.Println(reflect.TypeOf(api))
