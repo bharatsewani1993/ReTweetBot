@@ -14,10 +14,10 @@ import (
 //login to twitter
 func twitterlogin() *anaconda.TwitterApi {
 	//API Key and Access Token
-	consumerkey := ""
-	consumersecret := ""
-	accesstoken := ""
-	accesstokensecret := ""
+	consumerkey := "mkepp9H65kniGdBbYoaH3qmrM"
+  consumersecret := "5T9WfXw4wqlPIDy8YbDVttS2jIiWGvJ3934iPc15jr1N6JL7NN"
+  accesstoken := "1005393626967363585-3DhoYPWQMblzFgwTcYSqJ33Vm1JJBi"
+  accesstokensecret := "cio0aTlMObZlwrNhqaZS8EFyuZ25jdLnVPhWPJ1iX7yaj"
 
 	//Authentication With Twitter
 	anaconda.SetConsumerKey(consumerkey)
@@ -35,7 +35,7 @@ func searchandretweet(api *anaconda.TwitterApi, db *sql.DB) {
 	options.Set("include_entities", "false")
 
 	//Search Query
-	SearchResult, err := api.GetSearch("#golangjobs", options)
+	SearchResult, err := api.GetSearch("#golang #job OR #golangjob", options)
 	if err != nil {
      fmt.Printf("Error: %v\n",err)
 	}
@@ -111,6 +111,18 @@ func followbackusers(api *anaconda.TwitterApi, db *sql.DB) {
 	if userlist != nil{
 		storefollowersid(userlist, db)
 	}
+
+	//unfollow the unfollowers
+	 followersindb = getfollowersfromdb(db)
+	 userlist = difference(followersindb,followerlist.Ids)
+	 for _, list := range userlist {
+ 	 fmt.Printf("Unfollow user %v\n",list)
+ 	 //Unfollow users
+ 	 _, err := api.UnfollowUserId(list)
+ 	 if err != nil {
+ 		 fmt.Printf("Error: %v\n", err)
+ 	 }
+  }
 }
 
 //initialize database connection
@@ -218,9 +230,9 @@ func updategreetedusers(followerlist []int64, db *sql.DB) (bool){
 	    updatequery := "UPDATE followers SET greet = (CASE followerid when "
 		  for _, followerid := range followerlist {
 				s := strconv.FormatInt(followerid, 10)
-				updatequery += s + " then 1 when"
+				updatequery += s + " then 1 when "
 			}
-			updatequery = strings.TrimRight(updatequery," when")
+			updatequery = strings.TrimRight(updatequery," when ")
 			updatequery += " END ) where followerid in ("
 			for _, followerid := range followerlist {
 				s := strconv.FormatInt(followerid, 10)
